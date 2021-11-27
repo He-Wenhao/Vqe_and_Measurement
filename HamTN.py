@@ -509,5 +509,6 @@ if __name__ == '__main__':
     J = 0.1 # parameter of Ising
     l = 2   # layers
     n_para = UniTN_1d_para_cnt(n,l) # nums of parameters
-    get_Ham(n,g,J,l,n_para)     # get Hamiltonian matrix
-    get_DerHam_Naive(n,g,J,l,n_para)    # get d H / d \phi
+    paraList = [random.uniform(1, 10) for i in range(n_para)]
+    get_Ham(n,g,J,l,paraList)     # get Hamiltonian matrix
+    get_DerHam_Naive(n,g,J,l,paraList)    # get d H / d \phi

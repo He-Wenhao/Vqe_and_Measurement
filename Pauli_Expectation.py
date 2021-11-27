@@ -1,5 +1,5 @@
+from HamTN import *
 import qiskit.quantum_info as qi
-from qiskit import QuantumCircuit
 import numpy as np
 
 
@@ -14,24 +14,20 @@ def generate_pauli_str(number, n):
 
 
 def pauli_trace(d_matrix, n):
-    for i in range(4 ** n):
-        st = generate_pauli_str(i, n)
-        pauli_op = qi.Operator.from_label(st)
-        print(st + " : " + str(d_matrix.expectation_value(pauli_op)))
+    with open("test.txt", "w") as f:
+        for i in range(4 ** n):
+            st = generate_pauli_str(i, n)
+            pauli_op = qi.Operator.from_label(st)
+            res = str(d_matrix.expectation_value(pauli_op).real) + " " + st.replace('', ' ').strip()
+            f.write(res + "\n")
 
 
-# eg 1
-print("======== eg 1 ========")
-rho_p = qi.DensityMatrix.from_label('-')
-print(rho_p.tensor(rho_p))
-pauli_trace(rho_p.tensor(rho_p), 2)
-
-# eg 2
-print("======== eg 2 ========")
-qc_AB = QuantumCircuit(2)
-qc_AB.h(0)
-qc_AB.cx(0, 1)
-qc_AB.draw()
-rho_p = qi.DensityMatrix.from_instruction(qc_AB)
-print(rho_p)
-pauli_trace(rho_p, 2)
+if __name__ == '__main__':
+    n = 5  # qubits
+    g = 10  # parameter of Ising
+    J = 0.1  # parameter of Ising
+    l = 2  # layers
+    n_para = UniTN_1d_para_cnt(n, l)  # nums of parameters
+    paraList = [random.uniform(1, 10) for i in range(n_para)]
+    H = qi.DensityMatrix(get_Ham(n, g, J, l, paraList))  # get Hamiltonian matrix
+    pauli_trace(H, n)
