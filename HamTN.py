@@ -4,7 +4,7 @@ from scipy.linalg import expm
 from math import sqrt
 import random
 from Pauli_Expectation import *
-
+import time
 random.seed(10)
 from typing import List, Tuple
 import itertools
@@ -420,6 +420,211 @@ def get_Ham(n: int, g: float, J: float, l: int, para: list) -> np.array:
     return matrix_tens
 
 
+
+## a Unitary, for l layers and n qubits -> unitary network U_{i1,...,in;j1,...jn}
+def UniTN_1d_SVD(n: int,l: int,para : List[float], conjugate = False) -> Tuple[List[tn.Node],List[tn.Edge],List[tn.Edge]]:
+    ## for efficient contraction, we maintain a list to group tensors
+    contraction_list = [[] for i in range(n)]
+
+    mypara = list(para).copy()
+    all_Nodes = [] ## to track all Nodes
+    ## indices of U_{i1,...,in;j1,...jn}
+    edge_i = n*[0]
+    edge_j = n*[0]
+    n_para = UniTN_1d_para_cnt(n,l)
+
+    if len(mypara) != n_para:
+        print(n_para)
+        raise TypeError("len(para) error")
+
+    if n%2 == 1:
+        ## generate the first layer
+        idTen2_2 = tn.Node(np.eye(2))
+        all_Nodes.append(idTen2_2)
+        contraction_list[0].append(idTen2_2)
+        edge_i[0] = idTen2_2[0]
+        edge_j[0] = idTen2_2[1]
+        for cnt in range(n//2):
+            paralist = [mypara.pop(0) for i in range(15)]
+            uniTen22_22 = UniTen22_22(paralist,conjugate) 
+            # SVD decomp
+            u_prime, v_prime, _ = tn.split_node(uniTen22_22, left_edges=[uniTen22_22[0],uniTen22_22[2]], right_edges=[uniTen22_22[1],uniTen22_22[3]])
+        
+            contraction_list[2*cnt+1].append(u_prime)
+            contraction_list[2*cnt+2].append(v_prime)
+            edge_i[2*cnt+1] = u_prime[0]
+            edge_i[2*cnt+2] = v_prime[1]
+            edge_j[2*cnt+1] = u_prime[1]
+            edge_j[2*cnt+2] = v_prime[2]
+
+            all_Nodes.append(u_prime)
+            all_Nodes.append(v_prime)
+        ## generate the li_th layer
+        for li in range(l-1):
+            if li%2 == 1:
+                for cnt in range(n//2):
+                    paralist = [mypara.pop(0) for i in range(15)]
+                    uniTen22_22 = UniTen22_22(paralist,conjugate)
+                    
+                    # do SVD
+                    u_prime, v_prime, _ = tn.split_node(uniTen22_22, left_edges=[uniTen22_22[0],uniTen22_22[2]], right_edges=[uniTen22_22[1],uniTen22_22[3]])
+        
+                    contraction_list[2*cnt+1].append(u_prime)
+                    contraction_list[2*cnt+2].append(v_prime)
+                    edge_i[2*cnt+1]^u_prime[1]
+                    edge_i[2*cnt+2]^v_prime[2]
+                    edge_i[2*cnt+1] = u_prime[0]
+                    edge_i[2*cnt+2] = v_prime[1]
+
+                    all_Nodes.append(u_prime)
+                    all_Nodes.append(v_prime)
+
+            if li%2 == 0:
+                for cnt in range(n//2):
+                    paralist = [mypara.pop(0) for i in range(15)]
+                    uniTen22_22 = UniTen22_22(paralist,conjugate)
+
+                    # do SVD
+                    u_prime, v_prime, _ = tn.split_node(uniTen22_22, left_edges=[uniTen22_22[0],uniTen22_22[2]], right_edges=[uniTen22_22[1],uniTen22_22[3]])
+        
+                    contraction_list[2*cnt+0].append(u_prime)
+                    contraction_list[2*cnt+1].append(v_prime)
+                    edge_i[2*cnt+0]^u_prime[1]
+                    edge_i[2*cnt+1]^v_prime[2]
+                    edge_i[2*cnt+0] = u_prime[0]
+                    edge_i[2*cnt+1] = v_prime[1]
+
+                    all_Nodes.append(u_prime)
+                    all_Nodes.append(v_prime)
+
+
+
+    
+    if n%2 == 0:    ######################################################
+        ## generate the first layer
+        for cnt in range(n//2):
+            paralist = [mypara.pop(0) for i in range(15)]
+            uniTen22_22 = UniTen22_22(paralist,conjugate) 
+            # SVD decomp
+            u_prime, v_prime, _ = tn.split_node(uniTen22_22, left_edges=[uniTen22_22[0],uniTen22_22[2]], right_edges=[uniTen22_22[1],uniTen22_22[3]])
+        
+            contraction_list[2*cnt+0].append(u_prime)
+            contraction_list[2*cnt+1].append(v_prime)
+            edge_i[2*cnt+0] = u_prime[0]
+            edge_i[2*cnt+1] = v_prime[1]
+            edge_j[2*cnt+0] = u_prime[1]
+            edge_j[2*cnt+1] = v_prime[2]
+
+            all_Nodes.append(u_prime)
+            all_Nodes.append(v_prime)
+
+        ## generate the li_th layer
+        for li in range(l-1):
+            if li%2 == 1:
+                for cnt in range(n//2):
+                    paralist = [mypara.pop(0) for i in range(15)]
+                    uniTen22_22 = UniTen22_22(paralist,conjugate)
+
+                    # do SVD
+                    u_prime, v_prime, _ = tn.split_node(uniTen22_22, left_edges=[uniTen22_22[0],uniTen22_22[2]], right_edges=[uniTen22_22[1],uniTen22_22[3]])
+        
+                    contraction_list[2*cnt+0].append(u_prime)
+                    contraction_list[2*cnt+1].append(v_prime)
+                    edge_i[2*cnt+0]^u_prime[1]
+                    edge_i[2*cnt+1]^v_prime[2]
+                    edge_i[2*cnt+0] = u_prime[0]
+                    edge_i[2*cnt+1] = v_prime[1]
+
+                    all_Nodes.append(u_prime)
+                    all_Nodes.append(v_prime)
+
+            if li%2 == 0:
+                for cnt in range(n//2-1):
+                    paralist = [mypara.pop(0) for i in range(15)]
+                    uniTen22_22 = UniTen22_22(paralist,conjugate)
+
+                    # do SVD
+                    u_prime, v_prime, _ = tn.split_node(uniTen22_22, left_edges=[uniTen22_22[0],uniTen22_22[2]], right_edges=[uniTen22_22[1],uniTen22_22[3]])
+        
+                    contraction_list[2*cnt+1].append(u_prime)
+                    contraction_list[2*cnt+2].append(v_prime)
+                    edge_i[2*cnt+1]^u_prime[1]
+                    edge_i[2*cnt+2]^v_prime[2]
+                    edge_i[2*cnt+1] = u_prime[0]
+                    edge_i[2*cnt+2] = v_prime[1]
+
+                    all_Nodes.append(u_prime)
+                    all_Nodes.append(v_prime)
+
+
+    # for debug       
+    #resTN = tn.contractors.auto(all_Nodes,output_edge_order=edge_i+edge_j)
+    #debug_UTN_IsUnitary(resTN)
+    return (all_Nodes,edge_i,edge_j) , contraction_list
+
+
+
+## get Hamiltonian Pauli, with SVD contraction
+## n,g,J : config of Ising model
+## l: config of Unitary Tensornetwork
+## para: \phi parameters of Unitary tensor network
+## T ~ O(n*4^l)
+def get_Ham_Pauli_SVD(n:int,g:float,J:float,l: int, para:list,P_str: str) -> np.array:
+    contraction_list = [[] for i in range(n)]
+    mypara = para.copy()
+    if len(mypara) != UniTN_1d_para_cnt(n,l):
+        print(mypara)
+        raise TypeError("len(para) error")
+    # construct U H U^*
+    HamTN = Ham2TN_1dTransverse_Ising(n,g,J) 
+    #HamTN = Iden(n)
+    UniTN, cl_1 = UniTN_1d_SVD(n,l,mypara)
+    UniTN_conj, cl_2 = UniTN_1d_SVD(n,l,mypara,conjugate=True)
+    # do U H U^\dagger
+    for i in range(n):
+        UniTN[2][i] ^ HamTN[1][i] 
+        HamTN[2][i] ^ UniTN_conj[2][i]
+    all_TN = (HamTN[0]+UniTN[0]+UniTN_conj[0],UniTN[1],UniTN_conj[1])
+    # contraction within a stripe
+    tmpNodes = []
+    for i in range(n):
+        #print(HamTN[i])
+        contraction_list[i] = contraction_list[i] + cl_1[i] + cl_2[i] + [HamTN[0][i]]
+        #print(contraction_list[i])
+    # contract Pauli
+    PX = np.array([[0., 1.], [1., 0.]])
+    PY = np.array([[0., 0. - 1.j], [0. + 1.j, 0.]])
+    PZ = np.array([[1., 0.], [0., -1.]])
+    Id = np.array([[1., 0.], [0., 1.]])
+    for i in range(n):
+        if P_str[i] == "X":
+            tn_PX = tn.Node(PX)
+            contraction_list[i].append(tn_PX)
+            tn_PX[0] ^ all_TN[1][i]
+            tn_PX[1] ^ all_TN[2][i]
+        elif P_str[i] == "Y":
+            tn_PY = tn.Node(PY)
+            contraction_list[i].append(tn_PY)
+            tn_PY[0] ^ all_TN[1][i]
+            tn_PY[1] ^ all_TN[2][i]
+        elif P_str[i] == "Z":
+            tn_PZ = tn.Node(PZ)
+            contraction_list[i].append(tn_PZ)
+            tn_PZ[0] ^ all_TN[1][i]
+            tn_PZ[1] ^ all_TN[2][i]
+        elif P_str[i] == "I":
+            tn_Id = tn.Node(Id)
+            contraction_list[i].append(tn_Id)
+            tn_Id[0] ^ all_TN[1][i]
+            tn_Id[1] ^ all_TN[2][i]
+
+    
+    for i in range(n):
+        node = tn.contractors.optimal(contraction_list[i],ignore_edge_order=True)
+        tmpNodes.append(node)
+    myTN = tn.contractors.auto(tmpNodes)
+    return myTN.tensor 
+
 def get_Ham_Pauli(n: int, g: float, J: float, l: int, para: list, P_str: str) -> np.array:
     mypara = para.copy()
     if len(mypara) != UniTN_1d_para_cnt(n, l):
@@ -571,18 +776,28 @@ def test2():
 if __name__ == '__main__':
     # test1()
     # test2()
-
-    n = 5  # qubits
-    g = 10  # parameter of Ising
-    J = 0.1  # parameter of Ising
-    l = 1  # layers
-    n_para = UniTN_1d_para_cnt(n, l)  # nums of parameters
-    paraList = [random.uniform(1, 10) for i in range(n_para)]
-    for i in range(4 ** n):
-        st = generate_pauli_str(i, n)
-        pauli_op = qi.Operator.from_label(st)
-        res = str(get_Ham_Pauli(n, g, J, l, paraList, st)) + " " + st.replace('', ' ').strip()
-        print(res)
-    get_Ham(n, g, J, l, paraList)  # get Hamiltonian matrix
+    for n in range(2,11):
+    #n = 5  # qubits
+        g = 10  # parameter of Ising
+        J = 0.1  # parameter of Ising
+        l = 1  # layers
+        n_para = UniTN_1d_para_cnt(n, l)  # nums of parameters
+        paraList = [random.uniform(1, 10) for i in range(n_para)]
+        start = time.time()
+        for i in range(4 ** n):
+            st = generate_pauli_str(i, n)
+            pauli_op = qi.Operator.from_label(st)
+            res = str(get_Ham_Pauli(n, g, J, l, paraList, st)) + " " + st.replace('', ' ').strip()
+        end = time.time()
+        time1 = (end-start)/4**n
+        start = time.time()
+        for i in range(4 ** n):
+            st = generate_pauli_str(i, n)
+            pauli_op = qi.Operator.from_label(st)
+            res = str(get_Ham_Pauli_SVD(n, g, J, l, paraList, st)) + " " + st.replace('', ' ').strip()
+        end = time.time()
+        time2 = (end-start)/4**n
+        print('n = ',n,"time = ",time1,time2,"(SVD)")
+    #get_Ham(n, g, J, l, paraList)  # get Hamiltonian matrix
 
     # get_DerHam_Naive(n, g, J, l, paraList)  # get d H / d \phi
