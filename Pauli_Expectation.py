@@ -27,27 +27,25 @@ def if_non_zero_Pauli(P_str, l):
 
 
 def generate_non_zero_Pauli(n, l):
-    res_list = []
+    res_list = set()
     length = 2 + 2 * l
-    if n % 2 == 0:
-        for i in range(n - length):
-            if i != 1 and i != n - length - 1 and i != (n-length)/2:
-                for j in range(4 ** length):
-                    res_list.append("I" * i + generate_pauli_str(i, length) + "I" * (n - length - i))
-    else:
-        for i in range(n - length):
-            if i != 1 and i != n - length - 1:
-                for j in range(4 ** length):
-                    res_list.append("I" * i + generate_pauli_str(i, length) + "I" * (n - length - i))
+    for i in range(n - length + 1):
+        for j in range(4 ** length):
+            res_list.add("I" * i + generate_pauli_str(j, length) + "I" * (n - length - i))
+    res_list.remove("I" * n)
     return res_list
 
 
 def pauli_trace(d_matrix, n, l):
+    res_list = set()
     with open("test.txt", "w") as f:
         for i in range(4 ** n):
             st = generate_pauli_str(i, n)
             if if_non_zero_Pauli(st, l):
                 pauli_op = qi.Operator.from_label(st)
                 val = d_matrix.expectation_value(pauli_op).real
-                res = str(val) + " " + st.replace('', ' ').strip()
-                f.write(res + "\n")
+                if if_non_zero_Pauli(st, l):
+                    res = str(val) + " " + st.replace('', ' ').strip()
+                    res_list.add(st)
+                    f.write(res + "\n")
+    return res_list

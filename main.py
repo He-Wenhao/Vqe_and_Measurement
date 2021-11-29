@@ -5,7 +5,7 @@ import time
 import qiskit.quantum_info as qi
 
 if __name__ == '__main__':
-    n = 10  # qubits
+    n = 7  # qubits
     g = 10  # parameter of Ising
     J = 0.1  # parameter of Ising
     l = 1  # layers
@@ -15,8 +15,8 @@ if __name__ == '__main__':
     start = time.time()
     tn_tmp = get_Ham_Pauli_SVD_v1(n, g, J, l, paraList, 0)
 
-    for i in range(4 ** n):
-        st = generate_pauli_str(i, n)
+    Pauli_list = generate_non_zero_Pauli(n, l)
+    for st in Pauli_list:
         if if_non_zero_Pauli(st, l):
             res = str(get_Ham_Pauli_SVD_v2(tn_tmp, st, 1)) + " " + st.replace('', ' ').strip()
             print(res)
