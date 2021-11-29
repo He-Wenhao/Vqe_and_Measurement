@@ -459,6 +459,7 @@ def UniTN_1d_SVD(n: int, l: int, para: List[float], conjugate=False) -> Tuple[
             edge_j[2 * cnt + 1] = u_prime[1]
             edge_j[2 * cnt + 2] = v_prime[2]
 
+
             all_Nodes.append(u_prime)
             all_Nodes.append(v_prime)
         ## generate the li_th layer
@@ -516,7 +517,6 @@ def UniTN_1d_SVD(n: int, l: int, para: List[float], conjugate=False) -> Tuple[
             edge_i[2 * cnt + 1] = v_prime[1]
             edge_j[2 * cnt + 0] = u_prime[1]
             edge_j[2 * cnt + 1] = v_prime[2]
-
             all_Nodes.append(u_prime)
             all_Nodes.append(v_prime)
 
