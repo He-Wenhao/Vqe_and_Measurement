@@ -12,12 +12,42 @@ def generate_pauli_str(number, n):
     return f_str
 
 
-def pauli_trace(d_matrix, n):
+def if_non_zero_Pauli(P_str, l):
+    n = len(P_str)
+    if P_str == "I" * n:
+        return False
+    for i in range(n):
+        if P_str[i] != "I":
+            for j in range(n):
+                if P_str[n - 1 - j] != "I":
+                    if n - 1 - j - i >= 2 + 2 * l:
+                        return False
+                    else:
+                        return True
+
+
+def generate_non_zero_Pauli(n, l):
+    res_list = []
+    length = 2 + 2 * l
+    if n % 2 == 0:
+        for i in range(n - length):
+            if i != 1 and i != n - length - 1 and i != (n-length)/2:
+                for j in range(4 ** length):
+                    res_list.append("I" * i + generate_pauli_str(i, length) + "I" * (n - length - i))
+    else:
+        for i in range(n - length):
+            if i != 1 and i != n - length - 1:
+                for j in range(4 ** length):
+                    res_list.append("I" * i + generate_pauli_str(i, length) + "I" * (n - length - i))
+    return res_list
+
+
+def pauli_trace(d_matrix, n, l):
     with open("test.txt", "w") as f:
         for i in range(4 ** n):
             st = generate_pauli_str(i, n)
-            pauli_op = qi.Operator.from_label(st)
-            res = str(d_matrix.expectation_value(pauli_op).real) + " " + st.replace('', ' ').strip()
-            f.write(res + "\n")
-
-
+            if if_non_zero_Pauli(st, l):
+                pauli_op = qi.Operator.from_label(st)
+                val = d_matrix.expectation_value(pauli_op).real
+                res = str(val) + " " + st.replace('', ' ').strip()
+                f.write(res + "\n")
