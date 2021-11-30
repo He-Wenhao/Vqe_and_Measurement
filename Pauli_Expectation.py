@@ -38,7 +38,7 @@ def generate_non_zero_Pauli(n, l):
 
 def pauli_trace(d_matrix, n, l):
     res_list = set()
-    with open("test.txt", "w") as f:
+    with open("test2.txt", "w") as f:
         for i in range(4 ** n):
             st = generate_pauli_str(i, n)
             if if_non_zero_Pauli(st, l):

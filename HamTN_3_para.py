@@ -612,17 +612,17 @@ def get_Ham_Pauli_SVD_v1(n: int, g: float, J: float, l: int, para: list, derive_
     #print(spectrum_1dTransverse_Ising(n, g, J))
     #matrix_tens = TN2Matrix((tmpNodes,UniTN[1],UniTN_conj[1]))
     #print(np.linalg.eigh(np.array(matrix_tens))[0])
-    return tmpNodes
+    return tmpNodes, all_TN
 
 
 def get_Ham_Pauli_SVD_v2(allNodes: List, P_str: str, contract_flag: int,derive_TN):
     myNodes = tn.replicate_nodes(allNodes)
     myNodes2 = []
     n = len(allNodes)
-    PX = np.array([[0., 1.], [1., 0.]])
-    PY = np.array([[0., 0. - 1.j], [0. + 1.j, 0.]])
-    PZ = np.array([[1., 0.], [0., -1.]])
-    Id = np.array([[1., 0.], [0., 1.]])
+    PX = np.array([[0.+0.j, 1.+0.j], [1.+0.j, 0.+0.j]])
+    PY = np.array([[0.+0.j, 0. - 1.j], [0. + 1.j, 0.+0.j]])
+    PZ = np.array([[1.+0.j, 0.+0.j], [0.+0.j, -1.+0.j]])
+    Id = np.array([[1.+0.j, 0.+0.j], [0.+0.j, 1.+0.j]])
     for i in range(n):
         # get two daggling legs of myNodes[i]
         edge1 = 0
@@ -650,7 +650,7 @@ def get_Ham_Pauli_SVD_v2(allNodes: List, P_str: str, contract_flag: int,derive_T
         for i in range(n):
             myNodes2.append(tn.contractors.greedy([myNodes[i], myNodes[n + i]], ignore_edge_order=True))
         myTN = myNodes2[0]
-        for i in range(1, len(myNodes2)):
+        for i in range(1, n):
             myTN = tn.contractors.greedy([myTN, myNodes2[i]], ignore_edge_order=True)
     if derive_TN != None:
         return 2*myTN.tensor.real
