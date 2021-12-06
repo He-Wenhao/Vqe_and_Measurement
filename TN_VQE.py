@@ -40,7 +40,7 @@ def Ansatz_optimization(num_qubits, need_optimize):
         The image of the process of optimization.
     """
     qubit_op = read_hamiltonian.read(num_qubits=num_qubits)
-    optimizer = AQGD()
+    optimizer = SPSA()
     # Quantum circuit
     ansatz = EfficientSU2(num_qubits=num_qubits, entanglement='linear', reps=4)
     backend = Aer.get_backend('aer_simulator')
