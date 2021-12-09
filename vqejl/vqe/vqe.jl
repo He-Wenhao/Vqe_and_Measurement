@@ -74,7 +74,7 @@ function training(maxiter::Int,qc::Qcircuit,obs,state)
             ideal_energy = ideal_ground_val_vec(obs|>Matrix,"eigenvalue")
             # println("---ideal energy: $ideal_energy ----")
         end
-        
+
         last_eng = get_energy(qc,obs,state)
 
         update_param(qc,obs,state)
@@ -92,7 +92,7 @@ function training(maxiter::Int,qc::Qcircuit,obs,state)
     end
 
     result_state = evaluate(qc,state)
-    
+
     return result_state,indx_list,energy_list
 end
 
@@ -104,7 +104,7 @@ function create_qcircuit(n::Int,nlayer::Int)
             add_gate!(qc,roty(π/5,j))
             add_gate!(qc,rotz(π/5,j))
         end
-    
+
         for k=1:n
             add_gate!(qc,mcnot(n,[k,k%n+1]))
         end
@@ -189,12 +189,18 @@ function optimize(path)
     return last(energy_list), length(energy_list)
 end
 
-function calc_energy(path)
+
+function calc_energy(path, loop)
     data,nqubit = get_data(joinpath(@__DIR__,path))
     obs = get_obs(data,1e-5)
-    qc = load(joinpath(@__DIR__,"circuit/circuit.jld"))
     state = vec_state_zero(nqubit)
-    energy = get_energy(qc["qc"],obs,state)
+    if loop != 0
+        qc = load(joinpath(@__DIR__,"circuit/circuit.jld"))
+        energy = get_energy(qc["qc"],obs,state)
+    else
+        energy = real(state'*obs*state)
+    end
     return energy
 end
+
 
