@@ -5,9 +5,9 @@ import numpy as np
 from qiskit.opflow import Z, X, I
 
 #Circuit imports
-#from qiskit_nature.problems.second_quantization.electronic import ElectronicStructureProblem
+from qiskit_nature.problems.second_quantization.electronic import ElectronicStructureProblem
 from qiskit_nature.circuit.library import HartreeFock, UCCSD, UCC
-#from qiskit_nature.algorithms import GroundStateEigensolver
+from qiskit_nature.algorithms import GroundStateEigensolver
 from qiskit_nature.results import EigenstateResult
 from qiskit import Aer
 from qiskit_nature.mappers.second_quantization import ParityMapper, JordanWignerMapper
@@ -23,10 +23,12 @@ from  qiskit.opflow.primitive_ops import PauliSumOp
 from qiskit.quantum_info.operators import Operator, Pauli
 import read_hamiltonian
 matplotlib.use('Agg')
+from qiskit.opflow import StateFn, CircuitStateFn
+import time
 
 
-
-def Ansatz_optimization(num_qubits):
+def Ansatz_optimization(num_qubits, need_optimize):
+    #start = time.time()
     r"""
     Given the Hamiltonian in the qubit form. Initalize a hardware efficient ansatz and optimize the ansatz.
     Args:
@@ -52,25 +54,38 @@ def Ansatz_optimization(num_qubits):
         values.append(mean)
         params.append(parameters)
 
-    algorithm = VQE(ansatz,
-            optimizer=optimizer,
-            callback=store_intermediate_result,
-            quantum_instance=backend)
+    if need_optimize:
+        algorithm = VQE(ansatz,
+                optimizer=optimizer,
+                callback=store_intermediate_result,
+                quantum_instance=backend)
+    else:
+        try:
+            output = open('optimal_point.pkl', 'rb')
+            optimal_point = pickle.load(output)[0]
+            output.close()
+            ansatz = ansatz.bind_parameters(optimal_point)
+        except:
+            init_phi = [0 for x in range(len(ansatz.parameters))]
+            ansatz = ansatz.bind_parameters(init_phi)
+        energy = (~StateFn(qubit_op) @ CircuitStateFn(primitive=ansatz, coeff=1.)).eval()
+        return energy
     result = algorithm.compute_minimum_eigenvalue(qubit_op)
-    res = result.eigenvalue.real
+    #print('vqe computed energy is', result.eigenvalue.real)
+
 
     # save the optimal circuit
     optimal_point = result.optimal_point
-    optimal_circ = ansatz.bind_parameters(optimal_point)
-    op_state = qi.Statevector(optimal_circ)
-    circ_matrix = qi.DensityMatrix(optimal_circ)
-    circ_matrix = circ_matrix.data
-    matrix_op = qubit_op.to_matrix()
-    output = open('optimal_circ.pkl', 'wb')
-    pickle.dump(optimal_circ, output)
+    # optimal_circ = ansatz.bind_parameters(optimal_point)
+    # op_state = qi.Statevector(optimal_circ)
+    # circ_matrix = qi.DensityMatrix(optimal_circ)
+    # circ_matrix = circ_matrix.data
+    # matrix_op = qubit_op.to_matrix()
+    output = open('optimal_point.pkl', 'wb')
+    pickle.dump(optimal_point, output)
     output.close()
 
-
+    '''
     plt.plot(counts, values)
     plt.xlabel('Eval count')
     plt.ylabel('Energy')
@@ -78,6 +93,9 @@ def Ansatz_optimization(num_qubits):
     plt.legend(loc='upper right')
 
     plt.savefig('./result.png')
+    '''
+    #end = time.time()
+    #print('VQE time = ',end - start)
+    return result.eigenvalue.real
 
-    return res
 
