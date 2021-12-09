@@ -104,10 +104,18 @@ def compute_derivative(n, g, J, l, paraList):
 
 
 def updateTheta(n, g, J, l, paraList):
-    h = 0.000005
+    h = 5e-4
+    h_for_debug = 1e-6
     der = compute_derivative(n, g, J, l, paraList)
+    der_fin_diff = []
+    for i in range(len(paraList)):
+        p2 = paraList.copy()
+        p2[i] += h_for_debug
+        res = (cal_energy(n, g, J, l, p2) - cal_energy(n, g, J, l, paraList))/h_for_debug
+        der_fin_diff.append(res)
     for i in range(len(paraList)):
         paraList[i] -= h * der[i]
+        print("der debug:",der[i],'(',der_fin_diff[i],')')
 
 
 def cal_energy(n, g, J, l, paraList):
