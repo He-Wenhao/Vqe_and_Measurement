@@ -175,8 +175,8 @@ def main_loop():
         energy_TN = optimize_theta(n, g, J, l, theta, 500, 1e-5, i)
         energy_quantum = optimize_energy(n, g, J, l, theta)
         if abs(energy_TN[0] - pre_TN) + abs(energy_quantum[0] - pre_quantum) < 1e-5:
-            print(energy_quantum[0], " ", i)
-            return 
+            print("Final energy & overall loop: ", energy_quantum[0], " ", i)
+            return
         else:
             print("TN: ", energy_TN)
             print('quantum :', energy_quantum)
