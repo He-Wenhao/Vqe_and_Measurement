@@ -29,16 +29,20 @@ def if_non_zero_Pauli(P_str, l):
 def generate_non_zero_Pauli(n, l):
     res_list = set()
     length = 2 + 2 * l
-    for i in range(n - length + 1):
-        for j in range(4 ** length):
-            res_list.add("I" * i + generate_pauli_str(j, length) + "I" * (n - length - i))
-    res_list.remove("I" * n)
+    if n > length - 1:
+        for i in range(n - length + 1):
+            for j in range(4 ** length):
+                res_list.add("I" * i + generate_pauli_str(j, length) + "I" * (n - length - i))
+        res_list.remove("I" * n)
+    else:
+        for i in range(4 ** n):
+            res_list.add(generate_pauli_str(i, n))
     return res_list
 
 
 def pauli_trace(d_matrix, n, l):
     res_list = set()
-    with open("test2.txt", "w") as f:
+    with open("8qubit.txt", "w") as f:
         for i in range(4 ** n):
             st = generate_pauli_str(i, n)
             if if_non_zero_Pauli(st, l):
