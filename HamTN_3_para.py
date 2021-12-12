@@ -7,7 +7,7 @@ from Pauli_Expectation import *
 import time
 
 
-random.seed(10)
+# random.seed(10)
 from typing import List, Tuple
 import itertools
 import scipy.integrate as integrate

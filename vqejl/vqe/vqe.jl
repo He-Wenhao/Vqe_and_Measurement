@@ -172,7 +172,7 @@ function optimize(path)
 
     state = vec_state_zero(nqubit)
     # obs1 = kron(IMatrix(1<<5),mat(X))*0.9945510539990559 + -0.10000000000000005*kron(IMatrix(1<<2),kron(kron(mat(Z),mat(Z)),IMatrix(1<<2)))
-    result_state,indx_list,energy_list = training(50,c,obs,state)
+    result_state,indx_list,energy_list = training(20,c,obs,state)
 
     ideal_energy = eigvals(obs|>Matrix)
 

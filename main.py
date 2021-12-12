@@ -89,11 +89,10 @@ def compute_difference(n, g, J, l, paraList, ifapply):
         pre_energy = cal_energy(n, g, J, l, paraList, ifapply)
         paraList[i] += 1e-7
         energy = cal_energy(n, g, J, l, paraList, ifapply)
-        diff = (energy-pre_energy)/1e-7
+        diff = (energy - pre_energy) / 1e-7
         result.append(diff)
         paraList[i] -= 1e-7
     return result
-
 
 
 def compute_derivative(n, g, J, l, paraList, ifapply):
@@ -116,13 +115,21 @@ def compute_derivative(n, g, J, l, paraList, ifapply):
     return result
 
 
-def updateTheta(n, g, J, l, paraList, h, ifapply):
-    # der = compute_derivative(n, g, J, l, paraList, ifapply)
-    diff = compute_difference(n, g, J, l, paraList, ifapply)
-    # print(der)
-    # print(diff)
+def updateTheta(n, g, J, l, paraList, step, h, ifapply):
+    # Adam
+    beta1 = 0.9
+    beta2 = 0.999
+    eps = 1e-8
+    m = [0. for _ in range(len(paraList))]
+    v = [0. for _ in range(len(paraList))]
+    grad = compute_difference(n, g, J, l, paraList, ifapply)
+    print(step, " grad: ", grad)
     for i in range(len(paraList)):
-        paraList[i] -= h * diff[i]
+        m[i] = beta1 * m[i] + (1 - beta1) * grad[i]
+        v[i] = beta2 * v[i] + (1 - beta2) * grad[i] ** 2
+        mhat = m[i] / (1.0 - beta1 ** (step + 1))
+        vhat = v[i] / (1.0 - beta2 ** (step + 1))
+        paraList[i] = paraList[i] - h * mhat / (sqrt(vhat) + eps)
 
 
 def decayed_learning_rate(h, decay_rate, global_step, decay_step):
@@ -142,21 +149,24 @@ def cal_energy(n, g, J, l, paraList, ifapply):
     return jl.calc_energy("../../test.txt", ifapply)
 
 
-def optimize_theta(n, g, J, l, paraList, loop, epsi, ifapply):
-    pre_energy = cal_energy(n, g, J, l, paraList, ifapply)
+def optimize_theta(n, g, J, l, paraList, loop, epsi, ifapply, pre_energy=999):
     energy = 999
+    h = 0.5
     for i in range(loop):
-        updateTheta(n, g, J, l, paraList, decayed_learning_rate(0.1, 0.98, ifapply + i, 1000), ifapply)
+        updateTheta(n, g, J, l, paraList, i, decayed_learning_rate(h, 0.5, i, 50), ifapply)
         energy = cal_energy(n, g, J, l, paraList, ifapply)
+        if pre_energy - energy < 0:
+            h *= 0.5
+            print("learning rate: ", h)
         if abs(energy - pre_energy) < epsi:
             return energy, i
-        print(i, energy)
+        print(i, ": ", energy)
         pre_energy = energy
     return energy, loop
 
 
 def main_loop():
-    n = 4  # qubits
+    n = 6  # qubits
     g = 10  # parameter of Ising
     J = 0.1  # parameter of Ising
     l = 1  # layers
@@ -166,16 +176,17 @@ def main_loop():
     phi = []
     # parameter for TN
     n_theta = UniTN_1d_para_cnt(n, l, 3)  # nums of parameters
-    theta = [random.uniform(1, 10) for i in range(n_theta)]
+    theta = [random.uniform(0, np.pi * 2) for i in range(n_theta)]
     pre_TN = 999
     pre_quantum = 999
     print(cal_energy(n, g, J, l, theta, 0))
     for i in range(20):
         print('------- loop', i, '--------')
-        energy_TN = optimize_theta(n, g, J, l, theta, 500, 1e-5, i)
+        energy_TN = optimize_theta(n, g, J, l, theta, 500, 1e-5, i, pre_quantum)
         energy_quantum = optimize_energy(n, g, J, l, theta)
-        if abs(energy_TN[0] - pre_TN) + abs(energy_quantum[0] - pre_quantum) < 1e-5:
-            print("Final energy & overall loop: ", energy_quantum[0], " ", i)
+        if energy_TN[0] > pre_TN or energy_quantum[0] > pre_quantum or energy_TN[0] > pre_quantum or energy_quantum[
+            0] > pre_TN:
+            print("Final energy & overall loop: ", min(energy_TN[0], pre_TN, pre_quantum, energy_quantum[0]), " ", i)
             return
         else:
             print("TN: ", energy_TN)
