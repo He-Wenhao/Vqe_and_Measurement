@@ -40,9 +40,9 @@ def generate_non_zero_Pauli(n, l):
     return res_list
 
 
-def pauli_trace(d_matrix, n, l):
+'''def pauli_trace(d_matrix, n, l):
     res_list = set()
-    with open("8qubit.txt", "w") as f:
+    with open("10qubit.txt", "w") as f:
         for i in range(4 ** n):
             st = generate_pauli_str(i, n)
             if if_non_zero_Pauli(st, l):
@@ -52,4 +52,4 @@ def pauli_trace(d_matrix, n, l):
                     res = str(val) + " " + st.replace('', ' ').strip()
                     res_list.add(st)
                     f.write(res + "\n")
-    return res_list
+    return res_list'''

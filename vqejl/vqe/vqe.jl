@@ -146,7 +146,7 @@ function main()
     # save_data(c.size,"vqe","expm",indx_list,energy_list)
 end
 
-function optimize(path)
+function optimize(path, loop)
     # print("Start:")
     #------- load hamiltonian file
     # data,nqubit = get_data(joinpath(@__DIR__,"data/h2.txt"))
@@ -157,8 +157,8 @@ function optimize(path)
     nlayer = 1
     for l=1:nlayer
         for i=1:nqubit
+            # add_gate!(c,rotx(rand(),i))
             add_gate!(c,roty(rand(),i))
-            add_gate!(c,rotz(rand(),i))
         end
         for j=1:nqubit-1
             add_gate!(c,mcnot(nqubit,[j,j+1]))
@@ -167,12 +167,12 @@ function optimize(path)
     # show_circuit(c)
 
     #------- construct hamiltonian & calculate the ideal energy
-    obs = get_obs(data,1e-5)
+    obs = get_obs(data,1e-3)
     ideal_energy = eigvals(obs|>Matrix)[1]
 
     state = vec_state_zero(nqubit)
     # obs1 = kron(IMatrix(1<<5),mat(X))*0.9945510539990559 + -0.10000000000000005*kron(IMatrix(1<<2),kron(kron(mat(Z),mat(Z)),IMatrix(1<<2)))
-    result_state,indx_list,energy_list = training(20,c,obs,state)
+    result_state,indx_list,energy_list = training(loop,c,obs,state)
 
     ideal_energy = eigvals(obs|>Matrix)
 

@@ -65,7 +65,7 @@ def test3main():
     print(spectrum_1dTransverse_Ising(n, g, J))
 
 
-def optimize_energy(n, g, J, l, paraList):
+def optimize_energy(n, g, J, l, paraList, loop):
     start = time.time()
     tn_tmp, _ = get_Ham_Pauli_SVD_v1(n, g, J, l, paraList, derive_TN=None)
     Pauli_list = generate_non_zero_Pauli(n, l)
@@ -78,8 +78,8 @@ def optimize_energy(n, g, J, l, paraList):
                 f.write(res + "\n")
     end = time.time()
     time2 = (end - start)
-    res = jl.optimize("../../test.txt")
-    print('n = ', n, "energy time = ", time2)
+    res = jl.optimize("../../test.txt", loop)
+    #        print('n = ', n, "energy time = ", time2)
     return res
 
 
@@ -123,7 +123,6 @@ def updateTheta(n, g, J, l, paraList, step, h, ifapply):
     m = [0. for _ in range(len(paraList))]
     v = [0. for _ in range(len(paraList))]
     grad = compute_difference(n, g, J, l, paraList, ifapply)
-    print(step, " grad: ", grad)
     for i in range(len(paraList)):
         m[i] = beta1 * m[i] + (1 - beta1) * grad[i]
         v[i] = beta2 * v[i] + (1 - beta2) * grad[i] ** 2
@@ -151,50 +150,61 @@ def cal_energy(n, g, J, l, paraList, ifapply):
 
 def optimize_theta(n, g, J, l, paraList, loop, epsi, ifapply, pre_energy=999):
     energy = 999
-    h = 0.5
+    h = 0.2 * (0.5 ** ifapply)
     for i in range(loop):
         updateTheta(n, g, J, l, paraList, i, decayed_learning_rate(h, 0.5, i, 50), ifapply)
         energy = cal_energy(n, g, J, l, paraList, ifapply)
         if pre_energy - energy < 0:
-            h *= 0.5
+            h *= 0.7
             print("learning rate: ", h)
-        if abs(energy - pre_energy) < epsi:
+        elif pre_energy - energy < epsi:
+            print(i, ": ", energy)
             return energy, i
         print(i, ": ", energy)
         pre_energy = energy
     return energy, loop
 
 
-def main_loop():
-    n = 6  # qubits
+def main_loop(num):
+    n = num  # qubits
     g = 10  # parameter of Ising
     J = 0.1  # parameter of Ising
     l = 1  # layers
     ## for debug, accurate diagonalization
-    print(spectrum_1dTransverse_Ising(n, g, J))
-    # parameter for quantum
-    phi = []
+    ideal_energy = spectrum_1dTransverse_Ising(n, g, J)[0]
+    print("ideal: ", ideal_energy)
     # parameter for TN
     n_theta = UniTN_1d_para_cnt(n, l, 3)  # nums of parameters
     theta = [random.uniform(0, np.pi * 2) for i in range(n_theta)]
-    pre_TN = 999
     pre_quantum = 999
     print(cal_energy(n, g, J, l, theta, 0))
-    for i in range(20):
-        print('------- loop', i, '--------')
-        energy_TN = optimize_theta(n, g, J, l, theta, 500, 1e-5, i, pre_quantum)
-        energy_quantum = optimize_energy(n, g, J, l, theta)
-        if energy_TN[0] > pre_TN or energy_quantum[0] > pre_quantum or energy_TN[0] > pre_quantum or energy_quantum[
-            0] > pre_TN:
-            print("Final energy & overall loop: ", min(energy_TN[0], pre_TN, pre_quantum, energy_quantum[0]), " ", i)
-            return
-        else:
-            print("TN: ", energy_TN)
-            print('quantum :', energy_quantum)
-            print('theta :', theta)
-            pre_TN = energy_TN[0]
-            pre_quantum = energy_quantum[0]
+    print("--------TN0--------")
+    energy_TN = optimize_theta(n, g, J, l, theta, 200, 1e-3, 0, pre_quantum)
+    print("TN0: ", energy_TN)
+    print("--------VQE--------")
+    energy_quantum = optimize_energy(n, g, J, l, theta, 500)
+    print('quantum :', energy_quantum)
+    print("--------TN1--------")
+    energy_TN = optimize_theta(n, g, J, l, theta, 200, 1e-3, 1, pre_quantum)
+    print("TN1: ", energy_TN)
+    '''if energy_quantum[0] > energy_TN[0]:
+        print("Final energy & overall loop: ", min(energy_TN[0], energy_quantum[0]))
+        return
+    else:
+        pre_quantum = energy_quantum[0]'''
+
+
+def vqe_only(num):
+    n = num  # qubits
+    g = 10  # parameter of Ising
+    J = 0.1  # parameter of Ising
+    l = 1  # layers
+    n_theta = UniTN_1d_para_cnt(n, l, 3)  # nums of parameters
+    theta = [random.uniform(0, np.pi * 2) for i in range(n_theta)]
+    print("vqe only: ", optimize_energy(n, g, J, l, theta, 500))
 
 
 if __name__ == '__main__':
-    main_loop()
+    n = 14
+    vqe_only(n)
+    main_loop(n)
